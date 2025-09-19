@@ -1,0 +1,108 @@
+# Railway Configuration for ACH Processing System Backend
+# This file configures the backend service deployment on Railway
+
+version: 2
+
+services:
+  backend:
+    build:
+      dockerfile: Dockerfile
+      context: ./backend
+    
+    # Environment configuration
+    env:
+      NODE_ENV: production
+      PORT: 3001
+    
+    # Health check configuration
+    healthcheck:
+      path: /health
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    
+    # Resource allocation
+    resources:
+      # Start with basic resources, can scale up
+      memory: 512MB
+      cpu: 0.5
+      # Auto-scaling configuration
+      replicas:
+        min: 1
+        max: 5
+        cpu_threshold: 70
+        memory_threshold: 80
+    
+    # Deployment strategy
+    deploy:
+      strategy: rolling
+      max_unavailable: 0
+      max_surge: 1
+    
+    # Networking
+    networking:
+      public: true
+      domains:
+        - production: ${{RAILWAY_PUBLIC_DOMAIN}}
+      
+    # Monitoring and logging
+    monitoring:
+      enabled: true
+      metrics:
+        - cpu
+        - memory
+        - request_count
+        - response_time
+      alerts:
+        - type: cpu
+          threshold: 80
+          duration: 5m
+        - type: memory
+          threshold: 85
+          duration: 5m
+        - type: error_rate
+          threshold: 5
+          duration: 2m
+    
+    # Backup and persistence
+    volumes:
+      - name: logs
+        mount: /app/logs
+        size: 1GB
+    
+    # Security
+    security:
+      read_only_root_filesystem: false
+      allow_privilege_escalation: false
+      run_as_non_root: true
+
+# Database configuration (if using Railway PostgreSQL)
+databases:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ach_processing
+      POSTGRES_USER: ${{POSTGRES_USER}}
+      POSTGRES_PASSWORD: ${{POSTGRES_PASSWORD}}
+    
+    resources:
+      memory: 256MB
+      cpu: 0.25
+      storage: 10GB
+    
+    backup:
+      enabled: true
+      schedule: "0 2 * * *"  # Daily at 2 AM
+      retention: 7  # Keep 7 days of backups
+
+# Redis for caching (optional)
+redis:
+  image: redis:7-alpine
+  resources:
+    memory: 128MB
+    cpu: 0.1
+  
+  config:
+    maxmemory: 100mb
+    maxmemory-policy: allkeys-lru
