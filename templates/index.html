@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ACH Processing System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card h2 {
+            color: #333;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 0.5rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e1e1e1;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 0.75rem 2rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: transform 0.2s ease;
+            margin-right: 1rem;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+        
+        .alert {
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            font-weight: 500;
+        }
+        
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f1b0b7;
+        }
+        
+        .transaction-list {
+            margin-top: 2rem;
+        }
+        
+        .transaction-item {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .transaction-info {
+            flex: 1;
+        }
+        
+        .transaction-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        
+        .status-pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-processed {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>ACH Processing System</h1>
+            <p>Submit transaction data and generate ACH files</p>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="pendingCount">0</div>
+                <div>Pending Transactions</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="processedCount">0</div>
+                <div>Processed Transactions</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalAmount">$0.00</div>
+                <div>Total Amount</div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>Submit New Transaction</h2>
+            <div id="alertContainer"></div>
+            
+            <form id="transactionForm">
+                <div class="form-group">
+                    <label for="routingNumber">Bank Routing Number</label>
+                    <input type="text" id="routingNumber" name="routing_number" 
+                           placeholder="9-digit routing number" pattern="[0-9]{9}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="accountNumber">Account Number</label>
+                    <input type="text" id="accountNumber" name="account_number" 
+                           placeholder="Account number" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="amount">Amount ($)</label>
+                    <input type="number" id="amount" name="amount" 
+                           placeholder="0.00" step="0.01" min="0" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="transactionType">Transaction Type</label>
+                    <select id="transactionType" name="transaction_type" required>
+                        <option value="">Select type</option>
+                        <option value="CREDIT">Credit (Deposit)</option>
+                        <option value="DEBIT">Debit (Withdrawal)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="individualName">Individual Name</label>
+                    <input type="text" id="individualName" name="individual_name" 
+                           placeholder="Customer name">
+                </div>
+                
+                <div class="form-group">
+                    <label for="individualId">Individual ID</label>
+                    <input type="text" id="individualId" name="individual_id" 
+                           placeholder="Customer ID or reference">
+                </div>
+                
+                <button type="submit" class="btn">
+                    <span id="submitText">Submit Transaction</span>
+                    <span id="submitLoading" class="loading hidden"></span>
+                </button>
+            </form>
+        </div>
+        
+        <div class="card">
+            <h2>Generate ACH File</h2>
+            <p>Generate an ACH file from all pending transactions.</p>
+            <br>
+            <button id="generateBtn" class="btn btn-secondary">
+                <span id="generateText">Generate ACH File</span>
+                <span id="generateLoading" class="loading hidden"></span>
+            </button>
+            <div id="generateResult" class="hidden"></div>
+        </div>
+        
+        <div class="card">
+            <h2>Transaction History</h2>
+            <button id="refreshBtn" class="btn">Refresh</button>
+            <div id="transactionList" class="transaction-list">
+                <!-- Transactions will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let transactions = [];
+        
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTransactions();
+            
+            // Form submission
+            document.getElementById('transactionForm').addEventListener('submit', submitTransaction);
+            
+            // Generate ACH file
+            document.getElementById('generateBtn').addEventListener('click', generateACHFile);
+            
+            // Refresh transactions
+            document.getElementById('refreshBtn').addEventListener('click', loadTransactions);
+        });
+        
+        // Submit new transaction
+        async function submitTransaction(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitText');
+            const loading = document.getElementById('submitLoading');
+            
+            // Show loading state
+            submitBtn.classList.add('hidden');
+            loading.classList.remove('hidden');
+            
+            try {
+                const formData = new FormData(e.target);
+                const data = Object.fromEntries(formData);
+                
+                const response = await fetch('/api/submit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert('Transaction submitted successfully!', 'success');
+                    e.target.reset();
+                    loadTransactions(); // Refresh the list
+                } else {
+                    showAlert('Error: ' + result.error, 'error');
+                }
+                
+            } catch (error) {
+                showAlert('Network error: ' + error.message, 'error');
+            } finally {
+                // Hide loading state
+                submitBtn.classList.remove('hidden');
+                loading.classList.add('hidden');
+            }
+        }
+        
+        // Generate ACH file
+        async function generateACHFile() {
+            const generateText = document.getElementById('generateText');
+            const generateLoading = document.getElementById('generateLoading');
+            const resultDiv = document.getElementById('generateResult');
+            
+            // Show loading state
+            generateText.classList.add('hidden');
+            generateLoading.classList.remove('hidden');
+            
+            try {
+                const response = await fetch('/api/generate_ach', {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    resultDiv.innerHTML = `
+                        <div class="alert alert-success">
+                            <strong>ACH file generated successfully!</strong><br>
+                            File: ${result.file_path}<br>
+                            Transactions processed: ${result.transaction_count}<br>
+                            <a href="/api/download_ach/${result.file_path}" class="btn" style="margin-top: 10px;">Download File</a>
+                        </div>
+                    `;
+                    resultDiv.classList.remove('hidden');
+                    loadTransactions(); // Refresh to show updated status
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="alert alert-error">
+                            <strong>Error:</strong> ${result.error}
+                        </div>
+                    `;
+                    resultDiv.classList.remove('hidden');
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="alert alert-error">
+                        <strong>Network error:</strong> ${error.message}
+                    </div>
+                `;
+                resultDiv.classList.remove('hidden');
+            } finally {
+                // Hide loading state
+                generateText.classList.remove('hidden');
+                generateLoading.classList.add('hidden');
+            }
+        }
+        
+        // Load and display transactions
+        async function loadTransactions() {
+            try {
+                const response = await fetch('/api/transactions');
+                transactions = await response.json();
+                
+                displayTransactions();
+                updateStats();
+                
+            } catch (error) {
+                console.error('Error loading transactions:', error);
+                showAlert('Error loading transactions: ' + error.message, 'error');
+            }
+        }
+        
+        // Display transactions in the list
+        function displayTransactions() {
+            const container = document.getElementById('transactionList');
+            
+            if (transactions.length === 0) {
+                container.innerHTML = '<p>No transactions found.</p>';
+                return;
+            }
+            
+            const html = transactions.map(transaction => `
+                <div class="transaction-item">
+                    <div class="transaction-info">
+                        <strong>${transaction.individual_name || 'N/A'}</strong><br>
+                        ${transaction.transaction_type} $${parseFloat(transaction.amount).toFixed(2)}<br>
+                        <small>Account: ****${transaction.account_number.slice(-4)} | 
+                               Routing: ${transaction.routing_number} | 
+                               Created: ${new Date(transaction.created_at).toLocaleString()}</small>
+                    </div>
+                    <div class="transaction-status status-${transaction.status}">
+                        ${transaction.status.toUpperCase()}
+                    </div>
+                </div>
+            `).join('');
+            
+            container.innerHTML = html;
+        }
+        
+        // Update statistics
+        function updateStats() {
+            const pending = transactions.filter(t => t.status === 'pending');
+            const processed = transactions.filter(t => t.status === 'processed');
+            const totalAmount = transactions.reduce((sum, t) => sum + parseFloat(t.amount), 0);
+            
+            document.getElementById('pendingCount').textContent = pending.length;
+            document.getElementById('processedCount').textContent = processed.length;
+            document.getElementById('totalAmount').textContent = '$' + totalAmount.toFixed(2);
+        }
+        
+        // Show alert message
+        function showAlert(message, type) {
+            const container = document.getElementById('alertContainer');
+            const alertClass = type === 'success' ? 'alert-success' : 'alert-error';
+            
+            container.innerHTML = `
+                <div class="alert ${alertClass}">
+                    ${message}
+                </div>
+            `;
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
