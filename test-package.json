@@ -1,1 +1,0 @@
-{"name": "bizpaysol-test", "version": "1.0.0", "description": "Test package.json for validation", "scripts": {"test": "echo \"No tests specified\""}}
